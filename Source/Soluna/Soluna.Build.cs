@@ -20,7 +20,7 @@ public class Soluna : ModuleRules
 			"UMG"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "GameplayTasks", "GameplayTags"} );
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Soluna",
