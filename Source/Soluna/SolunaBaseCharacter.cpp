@@ -70,27 +70,8 @@ void ASolunaBaseCharacter::OnRep_PlayerState()
 void ASolunaBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (AbilitySystemComponent) {
-		AbilitySystemComponent->AbilityFailedCallbacks.AddUObject(this, &ASolunaBaseCharacter::OnAbilityFailed);
-	}
-	
 }
 
-void ASolunaBaseCharacter::OnAbilityFailed(
-	const UGameplayAbility* Ability,
-	const FGameplayTagContainer& FailureTags)
-{
-
-	for (auto Tag : FailureTags)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failure Tag: %s"), *Tag.ToString());
-	}
-	if (FailureTags.HasTagExact(
-		FGameplayTag::RequestGameplayTag("Ability.ActivateFail.CantAffordCost")))
-	{
-		BP_OnAbilityFailed(FailureTags);
-	}
-}
 
 // Called every frame
 void ASolunaBaseCharacter::Tick(float DeltaTime)

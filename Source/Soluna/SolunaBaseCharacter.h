@@ -110,12 +110,4 @@ public:
 	virtual void OrientRotationToController_Implementation() override;
 
 	virtual void RotateCamera_Implementation(float TargetYawAngle) override;
-
-	UFUNCTION()
-	void OnAbilityFailed(
-		const UGameplayAbility* Ability, 
-		const FGameplayTagContainer& FailureTags);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void BP_OnAbilityFailed(const FGameplayTagContainer& FailureTags);
 };
