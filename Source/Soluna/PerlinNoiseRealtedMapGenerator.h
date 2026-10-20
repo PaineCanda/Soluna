@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "NormalizeMode.h"
+#include "Biomes.h"
 #include "TerrainType.h"
 
 /**
@@ -17,7 +18,7 @@ public:
 
 	TArray<FColor> GenerateBlackAndWhiteMap(int32 MapWidth, int32 MapHeight, const TArray<float>& HeightMap);
 
-	TArray<FColor> GenerateColouredMap(int32 MapWidth, int32 MapHeight, const TArray<float>& NoiseMap, const TArray<FTerrainTypeData>& Regions);
+	TArray<FColor> GenerateColouredMap(int32 MapWidth, int32 MapHeight, const TArray<float>& NoiseMap, const TArray<float>& BiomeMap, const TArray<FTerrainTypeData>& Regions, const TArray<FBiomesData>& Biomes);
 
 
 };

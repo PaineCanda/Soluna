@@ -43,8 +43,8 @@ void AInfiniteTerrain::Tick(float DeltaTime)
 void AInfiniteTerrain::Start()
 {
 	ATerrainChunk* DefaultChunk = TerrainChunkClass->GetDefaultObject<ATerrainChunk>();
-	WorldChunkSize = (DefaultChunk->ChunkSettings.ChunkSize - 1) * DefaultChunk->ChunkSettings.MeshSpacing;
-	ChunkSize = (DefaultChunk->ChunkSettings.ChunkSize - 1);
+	WorldChunkSize = (DefaultChunk->ChunkSettings.ChunkSize - 3) * DefaultChunk->ChunkSettings.MeshSpacing;
+	ChunkSize = (DefaultChunk->ChunkSettings.ChunkSize - 3);
 	ChunksVisibleInViewDistance = FMath::RoundToInt32((float) DistanceSettings.MaxViewDistance / (float)WorldChunkSize);
 }
 

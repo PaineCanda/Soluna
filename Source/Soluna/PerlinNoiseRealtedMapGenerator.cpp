@@ -7,6 +7,7 @@
 
 TArray<float> FPerlinNoiseRelatedMapGenerator::GenerateNoiseMap(int MapWidth, int MapHeight, int Seed, int Octaves, float Persistence, float Lacunarity, float NoiseScale, FVector2D Offset, ENormalizeMode NormalizeMode)
 {
+
 	TArray<float> NoiseMap;
 	NoiseMap.SetNum(MapWidth * MapHeight);
 
@@ -14,7 +15,7 @@ TArray<float> FPerlinNoiseRelatedMapGenerator::GenerateNoiseMap(int MapWidth, in
 	float Amplitude = 1.0f;
 	float Frequency = 1.0f;
 
-	FRandomStream prng(Seed); // Create a random number generator with the given seed
+	FRandomStream prng(Seed); // Create a pseudo random number generator with the given seed
 	TArray<FVector2D> OctaveOffsets;
 	OctaveOffsets.SetNum(Octaves);
 
@@ -35,7 +36,7 @@ TArray<float> FPerlinNoiseRelatedMapGenerator::GenerateNoiseMap(int MapWidth, in
 	float HalfWidth = MapWidth / 2.0f;  //Allows to scale into the middle of the map
 	float HalfHeight = MapHeight / 2.0f;
 
-	for (int y= 0; y < MapHeight; y++) 
+	for (int y = 0; y < MapHeight; y++) 
 		{
 			for (int x = 0; x < MapWidth; x++)
 			{
@@ -79,7 +80,7 @@ TArray<float> FPerlinNoiseRelatedMapGenerator::GenerateNoiseMap(int MapWidth, in
 				}
 				else if (NormalizeMode == ENormalizeMode::Global)
 				{
-					float NormalizedHeight = FMath::Clamp((NoiseMap[index] + 1) / (2.f * MaxPossibleNoiseHeigt / 2.f), 0, 1); // Normalize to [0 ; 1] and make every chunk have the same NormalizedHeight as there is a fixed variable MaxPossibleNoiseHeight that is shared across all chunks
+					float NormalizedHeight = FMath::Clamp((NoiseMap[index] + 1) / (2.f * MaxPossibleNoiseHeigt / 1.9f), 0, 1); // Normalize to [0 ; 1] and make every chunk have the same NormalizedHeight as there is a fixed variable MaxPossibleNoiseHeight that is shared across all chunks
 					NoiseMap[index] = NormalizedHeight;
 				}
 			}
@@ -102,24 +103,52 @@ TArray<FColor> FPerlinNoiseRelatedMapGenerator::GenerateBlackAndWhiteMap(int32 M
 	return BlackAndWhiteMap;
 }
 
-TArray<FColor> FPerlinNoiseRelatedMapGenerator::GenerateColouredMap(int32 MapWidth, int32 MapHeight, const TArray<float>& NoiseMap, const TArray<FTerrainTypeData>& Regions)
+TArray<FColor> FPerlinNoiseRelatedMapGenerator::GenerateColouredMap(int32 MapWidth, int32 MapHeight, const TArray<float>& NoiseMap, const TArray<float>& BiomeMap, const TArray<FTerrainTypeData>& Regions, const TArray<FBiomesData>& Biomes)
 {
 	TArray<FColor> ColourMap;
 	ColourMap.SetNum(MapWidth * MapHeight);
+	
 
 	ParallelFor(MapHeight, [&](int32 y)
 		{
 			for (int x = 0; x < MapWidth; x++)
 			{
 				int index = y * MapWidth + x;
-				float CurrentHeight = NoiseMap[index];
+
+				FLinearColor RegionsColor;
+
+				FLinearColor BiomeColor;
+
+
+				float RegionsValue = NoiseMap[index];
+
+				float BiomeValue = BiomeMap[index];
+
 				for (int i = 0; i < Regions.Num(); i++)
 				{
-					if (CurrentHeight <= Regions[i].HeightThreshold)
+					if (RegionsValue <= Regions[i].HeightThreshold)
 					{
-						ColourMap[index] = Regions[i].Colour;
+						RegionsColor = Regions[i].Colour;
 						break; // Exit the loop once the correct region is found
 					}
+				}
+
+				if (RegionsValue <= 0.4) {
+					ColourMap[index] = RegionsColor.ToFColor(true);
+				}
+
+				else {
+					for (int i = 0; i < Biomes.Num(); i++)
+					{
+						if (BiomeValue <= Biomes[i].HeightThreshold)
+						{
+							BiomeColor = Biomes[i].Colour;
+							break; // Exit the loop once the correct biome is found
+						}
+					}
+
+					FLinearColor FinalColor = FMath::Lerp(RegionsColor, BiomeColor, 0.3);
+					ColourMap[index] = FinalColor.ToFColor(true);
 				}
 			}
 		});

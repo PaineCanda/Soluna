@@ -5,10 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "TerrainSettings.h"
+#include "BiomeSettings.h"
 #include "TextureGenerator.h"
 #include "MeshGenerator.h"
 #include "ProceduralMeshComponent.h"
 #include "TerrainType.h"
+#include "Biomes.h"
 #include "PerlinNoiseRealtedMapGenerator.h"
 #include "TerrainDistanceSettings.h"
 #include "TerrainChunk.generated.h"
@@ -39,6 +41,9 @@ public:
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainGeneration")
 		FTerrainSettings ChunkSettings;
 
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TerrainGeneration")
+		FBiomeSettings BiomeSettings;
+
 		UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FVector2D ChunkCoord;
 
@@ -50,6 +55,11 @@ public:
 
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Display")
 		TArray<FTerrainTypeData> Regions; // Different type of terrain to be generated based on height
+
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Display")
+		TArray<FBiomesData> Biomes; // Different type of biomes based on height
+
+
 
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Display")
 		EDrawMode DrawMode; // How we want to visualise the map
@@ -80,6 +90,8 @@ public:
 
 		TArray<float> NoiseMap;
 
+		TArray<float> BiomeMap;
+
 		TArray<FColor> ColourMap;
 
 		// Instances of other classes
@@ -109,6 +121,7 @@ public:
 		void SetDefaultsForInfiniteTerrain(FVector2D Coordinates, int32 Size, FVector2D Offset, ENormalizeMode GenerationMode);
 		UProceduralMeshComponent* GetMeshFromMeshIndex(int MeshIndex);
 		int GetMeshIndex(int LOD, bool CollisionSetting);
+		void BiomeSpecificBehavior();
 
 protected:
 	// Called when the game starts or when spawned

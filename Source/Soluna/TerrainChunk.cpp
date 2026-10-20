@@ -94,7 +94,7 @@ void ATerrainChunk::UpdateTerrainChunk(FVector ViewerPosition3D, FTerrainDistanc
 
 
 	int MeshIndex = GetMeshIndex(NewLevelOfDetail, bNewCollisionSetting);
-	UProceduralMeshComponent* NewMesh = GetMeshFromMeshIndex(MeshIndex); // Creates NewMesh
+	UProceduralMeshComponent* NewMesh = GetMeshFromMeshIndex(MeshIndex); // Gets Mesh pointer
 
 	if (!NewMesh) {
 		return;
@@ -105,6 +105,9 @@ void ATerrainChunk::UpdateTerrainChunk(FVector ViewerPosition3D, FTerrainDistanc
 	{
 		bLODIsGenerating[MeshIndex] = true; // Set Is Generating to true
 		CreateMesh(NewMesh, NewLevelOfDetail, bNewCollisionSetting, MeshIndex);
+		if (BiomeSettings.bAdditionalFeatures) {
+			BiomeSpecificBehavior();
+		}
 	}
 	else if (bLODGenerated[MeshIndex]) { // If it is generated, then...
 		NewMesh->SetMeshSectionVisible(0, true);
@@ -130,7 +133,7 @@ void ATerrainChunk::SetDefaultsForInfiniteTerrain(FVector2D Coordinates, int32 S
 	ChunkCoord = Coordinates;
 	FVector2D Position = Coordinates * Size; // Transforms back into position vectors.
 	FVector PositionIn3DSpace = FVector(Position.X, Position.Y, 0); // Makes it in 3D space
-	Bounds = FBox::BuildAABB(PositionIn3DSpace, (FVector::One() * Size) / 2); // Builds a Box with centre Positionin3DSpace and extent of half of the chunk size in all directions.
+	Bounds = FBox::BuildAABB(PositionIn3DSpace, (FVector::One() * Size) / 2); // Builds a Box with centre PositionIn3DSpace and extent of half of the chunk size in all directions.
 	ChunkSettings.Offset.X = Offset.X;
 	ChunkSettings.Offset.Y = Offset.Y;
 	ChunkSettings.NormalizeMode = GenerationMode;
@@ -158,6 +161,39 @@ int ATerrainChunk::GetMeshIndex(int LOD, bool CollisionSetting)
 	return LOD + 1;
 }
 
+void ATerrainChunk::BiomeSpecificBehavior()
+{
+	for (int y = 0; y < ChunkSettings.ChunkSize; y++) {
+		for (int x = 0; x < ChunkSettings.ChunkSize; x++) {
+			int Index = y * ChunkSettings.ChunkSize + x;
+			EBiomes Biome;
+
+			for (int i = 0; i < Biomes.Num(); i++)
+			{
+				if (BiomeMap[Index] <= Biomes[i].HeightThreshold)
+				{
+					Biome = Biomes[i].Biome;
+					break;
+				}
+			}
+
+			if (Biome == EBiomes::SunnyPlains) {
+				// Code that relates to SunnyPlains Biome
+
+
+			}
+
+			if (Biome == EBiomes::MoonForests) {
+				// Code that relates to MoonForests Biome
+			}
+
+			if (Biome == EBiomes::Mountains) {
+				// Code that relates to Mountains Biome
+			}
+		}
+	}
+}
+
 
 void ATerrainChunk::DisplayMap(UTexture2D* Texture)
 {
@@ -177,18 +213,28 @@ void ATerrainChunk::DisplayMap(UTexture2D* Texture)
 
 void ATerrainChunk::GenerateChunk(FVector ViewerPosition3D, FTerrainDistanceSettings DistanceSettings)
 {
-	FTerrainSettings Settings = ChunkSettings;
+	FTerrainSettings TerrainSettings = ChunkSettings;
+	FBiomeSettings LocalBiomeSettings = BiomeSettings;
+	LocalBiomeSettings.ChunkSize = TerrainSettings.ChunkSize;
+	LocalBiomeSettings.Seed = TerrainSettings.Seed;
+	LocalBiomeSettings.Offset = TerrainSettings.Offset;
+	LocalBiomeSettings.NormalizeMode = TerrainSettings.NormalizeMode;
 	TArray<FTerrainTypeData> ChunkRegions = Regions;
+	TArray<FBiomesData> LocalBiomes = Biomes;
 	EDrawMode LocalDrawMode = DrawMode;
 
-	Async(EAsyncExecution::ThreadPool, [this, Settings = MoveTemp(Settings), ChunkRegions = MoveTemp(ChunkRegions), LocalDrawMode = MoveTemp(LocalDrawMode), ViewerPosition3D, DistanceSettings]()
+	Async(EAsyncExecution::ThreadPool, [this, TerrainSettings = MoveTemp(TerrainSettings), LocalBiomeSettings = MoveTemp(LocalBiomeSettings), ChunkRegions = MoveTemp(ChunkRegions), LocalBiomes = MoveTemp(LocalBiomes), LocalDrawMode = MoveTemp(LocalDrawMode), ViewerPosition3D, DistanceSettings]()
 		{
-			NoiseMap = MapGenerator.GenerateNoiseMap(Settings.ChunkSize, Settings.ChunkSize, Settings.Seed, Settings.Octaves, Settings.Persistence, Settings.Lacunarity, Settings.NoiseScale, Settings.Offset, Settings.NormalizeMode);
+			NoiseMap = MapGenerator.GenerateNoiseMap(TerrainSettings.ChunkSize, TerrainSettings.ChunkSize, TerrainSettings.Seed, TerrainSettings.Octaves, TerrainSettings.Persistence, TerrainSettings.Lacunarity, TerrainSettings.NoiseScale, TerrainSettings.Offset, TerrainSettings.NormalizeMode);
 
-			ColourMap = MapGenerator.GenerateColouredMap(Settings.ChunkSize, Settings.ChunkSize, NoiseMap, Regions);
 
-			AsyncTask(ENamedThreads::GameThread, [Settings, this, ViewerPosition3D, DistanceSettings]() {
-				GeneratedTexture = TextureGenerator.TextureFromColourMap(ColourMap, Settings.ChunkSize, Settings.ChunkSize);
+			BiomeMap = MapGenerator.GenerateNoiseMap(LocalBiomeSettings.ChunkSize, LocalBiomeSettings.ChunkSize, LocalBiomeSettings.Seed, LocalBiomeSettings.Octaves, LocalBiomeSettings.Persistence, LocalBiomeSettings.Lacunarity, LocalBiomeSettings.NoiseScale, LocalBiomeSettings.Offset, LocalBiomeSettings.NormalizeMode);
+
+
+			ColourMap = MapGenerator.GenerateColouredMap(TerrainSettings.ChunkSize, TerrainSettings.ChunkSize, NoiseMap, BiomeMap, ChunkRegions, LocalBiomes);
+
+			AsyncTask(ENamedThreads::GameThread, [TerrainSettings, this, ViewerPosition3D, DistanceSettings]() {
+				GeneratedTexture = TextureGenerator.TextureFromColourMap(ColourMap, TerrainSettings.ChunkSize, TerrainSettings.ChunkSize);
 				DisplayMap(GeneratedTexture);
 				UpdateTerrainChunk(ViewerPosition3D, DistanceSettings);
 				});
